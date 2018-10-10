@@ -327,6 +327,11 @@ class App(QMainWindow):
         painter.drawRect(self.x0, self.y0, self.w, self.h)
 
     # BACKEND functions 
+    def algorithm_reset():
+        """reset parameters after an algorithm has been run"""
+        self.alg_running = False # set flag false again
+        
+
     def simpleTemplateMatching(self):
         """call to external simpleTemplateMatching"""
 
@@ -360,8 +365,8 @@ class App(QMainWindow):
             self.x0 = coords[1]
             self.nextImage() # load image    
         else:
-            self.alg_running = False # set flag false again
             self.MST_timer.stop() # terminate algorithm
+            self.algorithm_reset() # cleanup and reset
 
 def run():
     """Run GUI"""
