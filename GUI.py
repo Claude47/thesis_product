@@ -10,7 +10,7 @@ import os, re, os.path # directory management
 import time # threads
 
 # PyQt5 imports
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, QWidgetAction, qApp, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, QWidgetAction, qApp, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStyle
 from PyQt5.QtGui import QIcon, QImage, QPixmap, QPainter, QPen
 from PyQt5.QtCore import Qt, QRect, pyqtSlot, pyqtSignal, QTimer 
 
@@ -118,6 +118,7 @@ class App(QMainWindow):
         
         # *** statusBar ***
         self.statusBar()
+        self.statusBar().showMessage('Ready to Track')
 
         # *** Tool Bar ***
         toolBar = self.addToolBar('Exit') # Add Exit icon to Tool Bar  
@@ -142,35 +143,41 @@ class App(QMainWindow):
         self.buttonsWidgetLayout = QHBoxLayout(self.buttonsWidget)
         
         # create buttons for buttonWidget
-        controls = ['Start','Prev', 'Pause', 'Play', 'Next','End']
+        controls = ['','', '', '', '','']
         self.buttons = [QPushButton(b) for b in controls]
         for button in self.buttons:
             self.buttonsWidgetLayout.addWidget(button)
         
         # Button Actions
         # 0. First
-        self.buttons[0].setToolTip('Click to go to start of Seq')
+        self.buttons[0].setToolTip('Click to go to Start of Sequence')
         self.buttons[0].clicked.connect(self.startImage) # action for 'start' button
+        self.buttons[0].setIcon(QApplication.style().standardIcon(QStyle.SP_MediaSkipBackward))
 
         # 1. Prev
-        self.buttons[1].setToolTip('Click to go to previous Image')
+        self.buttons[1].setToolTip('Click to go to Previous Frame')
         self.buttons[1].clicked.connect(self.prevImage)
+        self.buttons[1].setIcon(QApplication.style().standardIcon(QStyle.SP_MediaSeekBackward))
 
         # 2. Pause
-        self.buttons[2].setToolTip('Click to go to pause Sequence')
+        self.buttons[2].setToolTip('Click to Pause Sequence')
         self.buttons[2].clicked.connect(self.pauseSequence)
+        self.buttons[2].setIcon(QApplication.style().standardIcon(QStyle.SP_MediaPause))
 
         # 3. Play
-        self.buttons[3].setToolTip('Click to go to play Sequence')
+        self.buttons[3].setToolTip('Click to Play Sequence')
         self.buttons[3].clicked.connect(self.playSequence)
+        self.buttons[3].setIcon(QApplication.style().standardIcon(QStyle.SP_MediaPlay))
 
         # 4. Next
-        self.buttons[4].setToolTip('Click to go to next Image')
+        self.buttons[4].setToolTip('Click to go to Next Frame')
         self.buttons[4].clicked.connect(self.nextImage) # action for 'next' button
- 
+        self.buttons[4].setIcon(QApplication.style().standardIcon(QStyle.SP_MediaSeekForward))
+
         # 5. End
-        self.buttons[5].setToolTip('Click to go to end of Seq')
+        self.buttons[5].setToolTip('Click to go to end of Sequence')
         self.buttons[5].clicked.connect(self.endImage) # action for 'end' button
+        self.buttons[5].setIcon(QApplication.style().standardIcon(QStyle.SP_MediaSkipForward))
 
         # where to display our Main Image
         self.imageLabel = imageView()
@@ -241,7 +248,6 @@ class App(QMainWindow):
     def updateImage(self):
         """updates the image being displayed in self.imageLabel"""
         self.loadImage() # load updated image
-
 
     # functions to navigate sequences
     @pyqtSlot()
