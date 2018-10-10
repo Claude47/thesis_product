@@ -184,13 +184,14 @@ class App(QMainWindow):
         self.imageLabel.setMinimumWidth(480)
         self.imageLabel.setMinimumHeight(500)
         self.imageLabel.setStyleSheet('* {background: gray;}')
+        self.imageLabel.setAlignment(Qt.AlignCenter)
 
         # where to display templates and buttons
         self.templateLabel = imageView()
         self.templateLabel.setMinimumWidth(240)
         self.templateLabel.setMinimumHeight(250)
         self.templateLabel.setStyleSheet('* {background: black;}')
-
+        self.templateLabel.setAlignment(Qt.AlignCenter)
         # add widgets to layout
         self.screenLayout.addWidget(self.imageLabel)
         self.rightLayout.addWidget(self.templateLabel)
@@ -241,10 +242,22 @@ class App(QMainWindow):
         """renders the image to the QLabel"""
         if(self.alg_running == True):
             self.drawBounds() # draw bounds if we are in algorithm
+            self.renderTemplate() # load template into widget
         self.imageLabel.setPixmap(self.cur_pixmap) # populate label
         self.imageLabel.setMinimumHeight(self.cur_img.shape[0])
         self.imageLabel.setMinimumWidth(self.cur_img.shape[1])
         
+    def renderTemplate(self):
+        """renders template into templateQLabel when algorithm running"""
+        # extract template from cur_pixmap
+        template = QRect(self.x0, self.y0, self.w+1, self.h+1)
+        self.tmp_pixmap = self.cur_pixmap.copy(template)
+
+        self.templateLabel.setPixmap(self.tmp_pixmap) # populate label
+        self.templateLabel.setMinimumHeight(self.h)
+        self.templateLabel.setMinimumWidth(self.w)
+        
+
     def updateImage(self):
         """updates the image being displayed in self.imageLabel"""
         self.loadImage() # load updated image
@@ -311,7 +324,7 @@ class App(QMainWindow):
         painter = QPainter(self.cur_pixmap)
         pen = QPen(Qt.yellow)
         painter.setPen(pen)
-        painter.drawRect(self.x0, self.y0, self.imageLabel.currentQRect[3], self.imageLabel.currentQRect[2])
+        painter.drawRect(self.x0, self.y0, self.w, self.h)
 
     # BACKEND functions 
     def simpleTemplateMatching(self):
@@ -331,20 +344,23 @@ class App(QMainWindow):
         """initialise meanShiftTracking"""
         self.cur_index = 0 # start at beginning of sequence
         self.alg_running = True # tell system and Algorithm is running
-        self.MST.setup(self.seq_dir+"/0%07d.jpg", self.imageLabel.currentQRect) # setup mean shift tracker with coords
-
-    def meanShiftTrackingLoop(self):
-        """implement loop"""  
+        self.MST.setup(self.cur_img, self.imageLabel.currentQRect) # setup mean shift tracker with coords
         self.y0 = self.imageLabel.currentQRect[0]
         self.x0 = self.imageLabel.currentQRect[1]
-         
-        if(self.cur_index<self.seq_length):
-            coords = self.MST.track2() # track    
+        self.h = self.imageLabel.currentQRect[2]
+        self.w = self.imageLabel.currentQRect[3]
+        self.nextImage() # load frame 1
+
+    def meanShiftTrackingLoop(self):
+        """implement loop"""   
+        if(self.cur_index<self.seq_length-1):
+            coords = self.MST.track2(self.cur_img) # track    
             print("coords: ", coords)
             self.y0 = coords[0]
             self.x0 = coords[1]
             self.nextImage() # load image    
         else:
+            self.alg_running = False # set flag false again
             self.MST_timer.stop() # terminate algorithm
 
 def run():

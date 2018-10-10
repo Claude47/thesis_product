@@ -166,12 +166,8 @@ class tracker_MS(tracker): # inherits from tracker
                 return y1, x1
         return y1, x1
     
-    def setup(self, seq_path, ROI):
+    def setup(self, frame0, ROI):
         """initialsises tracker with template model"""
-        print(seq_path)
-        print(ROI)
-        self.load_sequence(seq_path) # load in sequence in seq_path 
-        ret,frame0 = self.cap.read() # get first frame
         self.y0 = ROI[0] # get dims (y,x,h,w) - 0,1,2,3
         self.x0 = ROI[1]
         self.h = ROI[2]
@@ -204,9 +200,8 @@ class tracker_MS(tracker): # inherits from tracker
             cv.imshow('mean_shift', frame1)
             cv.waitKey(0)
 
-    def track2(self):
+    def track2(self, frame): # gets frame from front end
         """track for gui"""
-        ret,frame = self.cap.read() # get next frame n+1
         if(frame is not None): # safety check 
             y0, x0 = self.mean_shift_loop(frame, self.q, self.y0, self.x0, self.h, self.w) 
             self.y0 = y0
@@ -214,5 +209,6 @@ class tracker_MS(tracker): # inherits from tracker
             return y0, x0     
         else:
             return -1, -1
+
 if __name__=='__main__':
     track2()
