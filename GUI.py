@@ -142,28 +142,36 @@ class App(QMainWindow):
         self.buttonsWidgetLayout = QHBoxLayout(self.buttonsWidget)
         
         # create buttons for buttonWidget
-        controls = ['Prev', 'Pause', 'Play', 'Next']
+        controls = ['Start','Prev', 'Pause', 'Play', 'Next','End']
         self.buttons = [QPushButton(b) for b in controls]
         for button in self.buttons:
             self.buttonsWidgetLayout.addWidget(button)
         
         # Button Actions
+        # 0. First
+        self.buttons[0].setToolTip('Click to go to start of Seq')
+        self.buttons[0].clicked.connect(self.startImage) # action for 'start' button
+
         # 1. Prev
-        self.buttons[0].setToolTip('Click to go to previous Image')
-        self.buttons[0].clicked.connect(self.prevImage)
+        self.buttons[1].setToolTip('Click to go to previous Image')
+        self.buttons[1].clicked.connect(self.prevImage)
 
         # 2. Pause
-        self.buttons[1].setToolTip('Click to go to pause Sequence')
-        self.buttons[1].clicked.connect(self.pauseSequence)
+        self.buttons[2].setToolTip('Click to go to pause Sequence')
+        self.buttons[2].clicked.connect(self.pauseSequence)
 
         # 3. Play
-        self.buttons[2].setToolTip('Click to go to play Sequence')
-        self.buttons[2].clicked.connect(self.playSequence)
+        self.buttons[3].setToolTip('Click to go to play Sequence')
+        self.buttons[3].clicked.connect(self.playSequence)
 
         # 4. Next
-        self.buttons[3].setToolTip('Click to go to next Image')
-        self.buttons[3].clicked.connect(self.nextImage) # action for 'next' button
+        self.buttons[4].setToolTip('Click to go to next Image')
+        self.buttons[4].clicked.connect(self.nextImage) # action for 'next' button
  
+        # 5. End
+        self.buttons[5].setToolTip('Click to go to end of Seq')
+        self.buttons[5].clicked.connect(self.endImage) # action for 'end' button
+
         # where to display our Main Image
         self.imageLabel = imageView()
         self.imageLabel.setMinimumWidth(480)
@@ -186,7 +194,7 @@ class App(QMainWindow):
         """initialised our API"""
         self.MST = tracker_MS(self.seq_dir+"00000001.jpg") # initialise tracker_MS object
                 
-    # GUI Functions
+    # function for sequence Input and Output
     @pyqtSlot()
     def openSequence(self):
         """function to point to a folder with a desired sequence"""
@@ -234,6 +242,22 @@ class App(QMainWindow):
         """updates the image being displayed in self.imageLabel"""
         self.loadImage() # load updated image
 
+
+    # functions to navigate sequences
+    @pyqtSlot()
+    def startImage(self):
+        """function to go to start of loaded sequence"""
+        self.cur_index = 0
+        self.cur_path = self.seq_paths[self.cur_index] # update internal current image path
+        self.updateImage() # update our imageLabel
+
+    @pyqtSlot()
+    def endImage(self):
+        """function to go to end of loaded sequence"""
+        self.cur_index = self.seq_length - 1
+        self.cur_path = self.seq_paths[self.cur_index] # update internal current image path
+        self.updateImage() # update our imageLabel
+
     @pyqtSlot()
     def nextImage(self):
         """button for moving to next image in self.seq_dir"""
@@ -263,6 +287,7 @@ class App(QMainWindow):
         else:
             self.seq_timer.stop() # stop playing
     
+    @pyqtSlot()
     def pauseSequence(self):
         """pauses loaded sequence for manual iteration"""
         self.seq_play = False # don't play 
