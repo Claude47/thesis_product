@@ -131,7 +131,7 @@ class App(QMainWindow):
         # screen
         self.centralWidget = QWidget() # central widget for screen
         self.setCentralWidget(self.centralWidget)
-        
+
         # main screen layout
         self.screenLayout = QHBoxLayout(self.centralWidget) # main screen
 
