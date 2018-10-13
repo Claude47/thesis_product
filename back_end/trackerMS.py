@@ -181,8 +181,8 @@ class trackerMS(tracker): # inherits from tracker
         self.x0 = ROI[1]
         self.h = ROI[2]
         self.w = ROI[3]
-        t0 = frame0[self.y0:self.y0+self.h, self.x0:self.x0+self.w] # isolate target template
-        self.q = self.histogram(t0) # compute target histogram, q from t1
+        template = frame0[self.y0:self.y0+self.h, self.x0:self.x0+self.w] # isolate target template
+        self.q = self.histogram(template) # compute target histogram, q from t1
  
     def track2(self):
         """mean shift algorithm applied to the video or image sequence"""

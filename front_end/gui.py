@@ -22,7 +22,9 @@ from front_end.imageview import imageView
 
 # Backend imports 
 from back_end.trackerTM import trackerTM # template tracker 
+from back_end.detectorCH import detectorCH # ch detector
 from back_end.trackerMS import trackerMS # mean shift tracker
+
 
 class GUI(QMainWindow):
     # instance variables for loading a sequence
@@ -201,6 +203,7 @@ class GUI(QMainWindow):
         """initialised our API"""
         self.MST = trackerMS(self.seq_dir+"00000001.jpg") # initialise trackerMS object
         self.TMT = trackerTM(self.seq_dir+"00000001.jpg") # initialise trackerTM object
+        self.CHD = detectorCH(self.seq_dir+"00000001.jpg") # intialise detectorCH object
                 
     # function for sequence Input and Output
     @pyqtSlot()
@@ -369,7 +372,34 @@ class GUI(QMainWindow):
         else:
             self.TMT_timer.stop() # terminate algorithm
             self.algorithm_reset() # cleanup and reset
+    
+    @pyqtSlot()
+    def CHDetection(self):
+        self.statusBar().showMessage('Status: Detecting (Co-occurrence Histogram)')
+        self.CHDInit
+    
+    def CHDInit(self):
+        """initialise CH Histogram"""
+        self.alg_running = True # tell system and Algorithm is running
+        self.CHD.setup(self.cur_img, self.imageLabel.currentQRect) # setup mean shift tracker with coords
+        self.y0 = self.imageLabel.currentQRect[0]
+        self.x0 = self.imageLabel.currentQRect[1]
+        self.h = self.imageLabel.currentQRect[2]
+        self.w = self.imageLabel.currentQRect[3]
+        self.CHDdetect()
 
+    def CHDdetect(self):
+        """detect template"""
+        coords1, coords2 = self.CHD.detect(self.cur_image) # detect template 
+        self.y0, self.x0 = coords1[0], coords1[1]
+        self.h, self.w = self.h*2, self.w*2
+        self.drawBounds() # draw course results
+
+        self.y0, self.x0 = coords2[0], coords2[1]
+        self.h, self.w = self.h//2, self.w//2
+        self.drawBounds() # draw fine results
+
+        
     @pyqtSlot()
     def meanShiftTracking(self):
         self.statusBar().showMessage('Status: Tracking (Mean Shift)')
