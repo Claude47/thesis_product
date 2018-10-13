@@ -6,13 +6,14 @@
     select a region of interest.
 """
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, qApp, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QRubberBand
-from PyQt5.QtGui import QIcon, QImage, QPixmap
-from PyQt5.QtCore import Qt, QRect, pyqtSlot, pyqtSignal, QSize 
+from PyQt5.QtWidgets import QWidget, QLabel, QRubberBand
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import Qt, QRect, QSize, pyqtSignal
 
 class imageView(QLabel):
     """image view subclasses QLabel to render and add mouse events"""
     currentQRect = 0
+    triggered = pyqtSignal() # to send
     def __init__(self):
         super(imageView, self).__init__()
         self.pixmap = QPixmap() # to store image
@@ -37,4 +38,6 @@ class imageView(QLabel):
         cropPixmap = self.pixmap.copy(QRect)
         self.cropLabel.setPixmap(cropPixmap)
         # cropPixmap.save('output.png')
+        self.triggered.emit()
+
 

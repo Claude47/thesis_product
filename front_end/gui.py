@@ -10,9 +10,9 @@ import os, re, os.path # directory management
 import time # threads
 
 # PyQt5 imports
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, QWidgetAction, qApp, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStyle
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, QWidgetAction, qApp, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStyle, QMessageBox
 from PyQt5.QtGui import QIcon, QImage, QPixmap, QPainter, QPen
-from PyQt5.QtCore import Qt, QRect, pyqtSlot, pyqtSignal, QTimer 
+from PyQt5.QtCore import Qt, QObject, QRect, pyqtSlot, pyqtSignal, QTimer 
 
 # cv for reading
 import cv2 as cv
@@ -45,6 +45,9 @@ class GUI(QMainWindow):
 
     # writing 
     write_path = "" # path to directory to write to 
+
+    # signals
+    release = pyqtSignal() # check release of imageView
 
     def __init__(self, parent=None):
         """super constructor + app constructor"""
@@ -195,7 +198,7 @@ class GUI(QMainWindow):
         self.imageLabel.setMinimumHeight(500)
         self.imageLabel.setStyleSheet('* {background: gray;}')
         self.imageLabel.setAlignment(Qt.AlignCenter)
-
+        
         # where to display templates and buttons
         self.templateLabel = imageView()
         self.templateLabel.setMinimumWidth(240)
@@ -215,6 +218,10 @@ class GUI(QMainWindow):
         self.CHD = detectorCH(self.seq_dir+"00000001.jpg") # intialise detectorCH object
                 
     # function for sequence Input and Output
+    @pyqtSlot()
+    def released(self):
+        print("relleeeeeeasadef")
+
     @pyqtSlot()
     def openSequence(self):
         """function to point to a folder with a desired sequence"""
@@ -347,6 +354,7 @@ class GUI(QMainWindow):
     def simpleTemplateTracking(self):
         """perform simple template matching"""
         self.statusBar().showMessage('Status: Tracking (Simple Template)') 
+
         self.TMT.setup(self.cur_img, self.imageLabel.currentQRect, "simple") # setup simple tracking
         self.templateTrackingInit()
     
@@ -424,6 +432,10 @@ class GUI(QMainWindow):
     @pyqtSlot()
     def meanShiftTracking(self):
         self.statusBar().showMessage('Status: Tracking (Mean Shift)')
+        QMessageBox.about(self, "Mean Shift Tracking", "Select Object to Track")
+        self.imageLabel.triggered.connect(self.meanShiftSelection)
+
+    def meanShiftSelection(self):
         self.meanShiftTrackingInit()
         self.MST_timer = QTimer() # timer for frame rate
         self.MST_timer.timeout.connect(self.meanShiftTrackingLoop) # connect timeouts to fetching next image
@@ -432,6 +444,7 @@ class GUI(QMainWindow):
     def meanShiftTrackingInit(self):
         """initialise meanShiftTracking"""
         self.alg_running = True # tell system and Algorithm is running
+        print(self.imageLabel.currentQRect)
         self.MST.setup(self.cur_img, self.imageLabel.currentQRect) # setup mean shift tracker with coords
         self.y0 = self.imageLabel.currentQRect[0]
         self.x0 = self.imageLabel.currentQRect[1]
