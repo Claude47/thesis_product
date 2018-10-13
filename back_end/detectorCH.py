@@ -15,7 +15,7 @@ from back_end.tracker import tracker
 class detectorCH(tracker):
     nd = 12 # distances for CCH
     nc = 8 # colour quantization levels
-    alpha = 0.8 # threshold
+    alpha = 0.7 # threshold
 
     def __init__(self, file_path):
         super().__init__(file_path)  # call to super tracker constructor
@@ -69,6 +69,7 @@ class detectorCH(tracker):
                 pixel = template[y,x] # get relevant pixel
                 rgb_euclidean[y,x] = self.RGB_euclidean_distance(pixel)
             
+        print(rgb_euclidean.shape)
         # Apply K-means algorithm to quantize pixels according to nc    
         q_labels = self.kmeans.predict(np.expand_dims(rgb_euclidean.flatten(), axis=1))
         candidate_labels = np.reshape(q_labels,(height,width)) # return the labels in 2D quantized dims
@@ -146,7 +147,7 @@ class detectorCH(tracker):
     def CH_model(self, template):
         """computes overall CH along vertical and horizontal axes"""
         # step1: quantize rgb colourspace according to nc
-        kmeans, q_labels2d = RGB_quantize_model(template)
+        q_labels2d = self.RGB_quantize_model(template)
         
         # step2: compute vertical and horizontal CH's
         CH_v  = self.CH_vertical(q_labels2d) # compute vertical CH
@@ -155,12 +156,12 @@ class detectorCH(tracker):
         CH_nd = self.CH_neg_diagonal(q_labels2d) # compute negative diagonal CH
 
         # step3: return overall hisgtogram
-        return kmeans, np.sum((CH_v, CH_h, CH_pd, CH_nd), axis=0)
+        return np.sum((CH_v, CH_h, CH_pd, CH_nd), axis=0)
 
     def CH_candidate(self, template):
         """computes overall CH along vertical and horizontal axes"""
         # step1: quantize rgb colourspace according to nc
-        q_labels2d = RGB_quantize_candidate(self.kmeans, template)
+        q_labels2d = self.RGB_quantize_candidate(template)
         
         # step2: compute vertical and horizontal CH's
         CH_v  = self.CH_vertical(q_labels2d) # compute vertical CH
@@ -184,30 +185,34 @@ class detectorCH(tracker):
 
     def setup(self, frame0, ROI):
         """setup the model"""
-        self.h = frame.shape[0] # frame height
-        self.w = frame.shape[1] # frame width
+        self.h = frame0.shape[0] # frame height
+        self.w = frame0.shape[1] # frame width
 
         self.y0 = ROI[0] # model y0
         self.x0 = ROI[1] # model x0
         self.hm = ROI[2] # model height
         self.wm = ROI[3] # model width
         template = frame0[self.y0:self.y0+self.hm, self.x0:self.x0+self.wm] # isolate target template
-        self.kmeans, self.q = self.CH_model(template) # compute target histogram, q from t1
+        self.q = self.CH_model(template) # compute target histogram, q from t1
  
     def search(self, frame, sw_height, sw_width, step_y, step_x):
         """performs course search for particular model CH in frame"""
-       
-        I_mm = CH_intersection(self.CH_model, self.CH_model) # compute I_mm
-        I_best, y_best, x_best = 0, 0, 0
+        height, width = frame.shape[0], frame.shape[1] # frame dimensions
         
+        I_mm = self.intersection(self.q, self.q) # compute I_mm
+        I_best, y_best, x_best = 0, 0, 0
+        print("I_mm: ", I_mm)        
         # iterate image
-        for y in range(0,self.h-step_y-1,step_y):
-            for x in range(0,self.w-step_x-1,step_x):
+        for y in range(0, height-step_y-1, step_y):
+            for x in range(0, width-step_x-1, step_x):
                 candidate = frame[y:y+sw_height, x:x+sw_width] # candidate window 
-                p = CH_candidate(self.kmeans, candidate) # compute candidate histogram p using model quantization
-                I_cm = CH_intersection(self.q, self.p) # compute candidate and model intersection
+                print(candidate.shape)
+                p = self.CH_candidate(candidate) # compute candidate histogram p using model quantization
+                I_cm = self.intersection(self.q, p) # compute candidate and model intersection
 
-                if(I_cm > self.alpha*I_mm and I_cm > I_best): # check quality of match aginst previous matches and threshold
+                print(I_cm)
+                if(I_cm > (self.alpha*I_mm) and I_cm > I_best): # check quality of match aginst previous matches and threshold
+                    print(I_cm)
                     I_best = I_cm # update best Intersection
                     y_best, x_best = y, x # update best coordinates
                     
@@ -216,22 +221,24 @@ class detectorCH(tracker):
 
     def detect(self, frame, sf=2):
         # obtain dimensions of frame, model and search window
-        height, width = frame.shape[0], frame.shape[1] # frame dimensions
-        model_height, model_width = self.model.shape[0], self.model.shape[1] # model dimensions
-        
+
+        print(self.kmeans)
+        print("coarse")
         # step1: Coarse Search
         sw_height, sw_width = sf*self.hm, sf*self.wm # get search window dimensions 
         step_y = sw_height//2 # y overlap 
         step_x = sw_width//2 # x overlap
         y0, x0, h0, w0 = self.search(frame, sw_height, sw_width, step_y, step_x) # returns best coordinates in coarse window
         
+        print("fine")
         # fine search
         sub_frame = frame[y0:y0+h0, x0:x0+w0] # reduce search dims to best match of coarse search
-        sw_height, sw_width = (sf-1)*self.hm, (sf-1)*self.wm
-        step_y = sw_height//4
-        step_x = sw_width//4
-        y1, x1, h1, w1 = self.search(sub_frame, sw_height, sw_width, step_y, step_x) # returns refined best coordinates
+        sw_height2, sw_width2 = self.hm, self.wm
+        step_y2 = sw_height2//4
+        step_x2 = sw_width2//4
+        y1, x1, h1, w1 = self.search(sub_frame, sw_height2, sw_width2, step_y2, step_x2) # returns refined best coordinates
         
+        print(x0, y0, x0+x1, y0+y1)
         # return two identified bounding boxes
-        return (y0,x0), (y1,x1)
+        return (y0, x0), (y0+y1, x0+x1)
 

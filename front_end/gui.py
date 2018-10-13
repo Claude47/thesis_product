@@ -83,25 +83,30 @@ class GUI(QMainWindow):
         exitAction.setStatusTip('Exit application') # status bar exit message
         exitAction.triggered.connect(self.close) # connect QtGui quit() method 
         
-        # 2. algorithmMenu Actions 
+        # 2. trackerMenu Actions 
         # Simple Template Matching
-        simpleTemplateMatchingAction = QAction('Simple Template Matching', self)
+        simpleTemplateMatchingAction = QAction('Simple Template Tracker', self)
         simpleTemplateMatchingAction.setShortcut('Ctrl+1')
         simpleTemplateMatchingAction.setStatusTip('Apply Simple Template Matching Algorithm')
         simpleTemplateMatchingAction.triggered.connect(self.simpleTemplateTracking)
 
         # Adaptive Template Matching
-        adaptiveTemplateMatchingAction = QAction('Adaptive Template Matching', self)
+        adaptiveTemplateMatchingAction = QAction('Adaptive Template Tracker', self)
         adaptiveTemplateMatchingAction.setShortcut('Ctrl+2')
         adaptiveTemplateMatchingAction.setStatusTip('Apply Adaptive Template Matching Algorithm')
         adaptiveTemplateMatchingAction.triggered.connect(self.adaptiveTemplateTracking)
 
         # Mean Shift
-        meanShiftTrackingAction = QAction('Mean Shift Tracking', self)
+        meanShiftTrackingAction = QAction('Mean Shift Tracker', self)
         meanShiftTrackingAction.setShortcut('Ctrl+3')
         meanShiftTrackingAction.setStatusTip('Apply Mean Shift Tracking Algorithm')
         meanShiftTrackingAction.triggered.connect(self.meanShiftTracking)
 
+        # Cooccurence Histogram
+        detectionAction = QAction('Cooccurence Histogram Detection', self)
+        detectionAction.setShortcut('Ctrl+4')
+        detectionAction.setStatusTip('Apply Cooccurrence histogram Detection')
+        detectionAction.triggered.connect(self.CHDetection)
 
         # *** menuBar ***
         menuBar = self.menuBar() 
@@ -111,11 +116,15 @@ class GUI(QMainWindow):
         fileMenu.addAction(fileSelectAction) # Add fileSelectAction to fileMenu 
         fileMenu.addAction(exitAction) # Add exitAction to fileMenu
         
-        ## 2. algorithmMenu - select algorithms
-        algorithmMenu = menuBar.addMenu('&Algorithms')
-        algorithmMenu.addAction(simpleTemplateMatchingAction) # Add simpleTemplateMatchingAction to algorithmMenu
-        algorithmMenu.addAction(adaptiveTemplateMatchingAction) # Add adaptiveTemplateMatchingAction to algorithmMenu
-        algorithmMenu.addAction(meanShiftTrackingAction) # Add meanShiftTracking to algorithmMenu
+         ## 2. detectorMenu - select algorithms
+        detectorMenu = menuBar.addMenu('&Detector')
+        detectorMenu.addAction(detectionAction) # Add simpleTemplateMatchingAction to trackerMenu
+        
+        ## 2. trackerMenu - select algorithms
+        trackerMenu = menuBar.addMenu('&Tracker')
+        trackerMenu.addAction(simpleTemplateMatchingAction) # Add simpleTemplateMatchingAction to trackerMenu
+        trackerMenu.addAction(adaptiveTemplateMatchingAction) # Add adaptiveTemplateMatchingAction to trackerMenu
+        trackerMenu.addAction(meanShiftTrackingAction) # Add meanShiftTracking to algorithmMenu
         
         # *** statusBar ***
         self.statusBar()
@@ -376,11 +385,12 @@ class GUI(QMainWindow):
     @pyqtSlot()
     def CHDetection(self):
         self.statusBar().showMessage('Status: Detecting (Co-occurrence Histogram)')
-        self.CHDInit
+        self.CHDInit()
     
     def CHDInit(self):
         """initialise CH Histogram"""
         self.alg_running = True # tell system and Algorithm is running
+        print(self.imageLabel.currentQRect)
         self.CHD.setup(self.cur_img, self.imageLabel.currentQRect) # setup mean shift tracker with coords
         self.y0 = self.imageLabel.currentQRect[0]
         self.x0 = self.imageLabel.currentQRect[1]
@@ -390,16 +400,27 @@ class GUI(QMainWindow):
 
     def CHDdetect(self):
         """detect template"""
-        coords1, coords2 = self.CHD.detect(self.cur_image) # detect template 
-        self.y0, self.x0 = coords1[0], coords1[1]
-        self.h, self.w = self.h*2, self.w*2
-        self.drawBounds() # draw course results
+        coords1, coords2 = self.CHD.detect(self.cur_img) # detect template 
+        y0, x0 = coords1[0], coords1[1]
+        y1, x1 = coords2[0], coords2[1]
 
-        self.y0, self.x0 = coords2[0], coords2[1]
-        self.h, self.w = self.h//2, self.w//2
-        self.drawBounds() # draw fine results
+        painter = QPainter(self.cur_pixmap)
+        pen = QPen(Qt.yellow)
+        painter.setPen(pen)
+        painter.drawRect(x0, y0, self.w*2, self.h*2)
+        painter.drawRect(x1, y1, self.w, self.h)
 
+        self.imageLabel.setPixmap(self.cur_pixmap) # populate label
+        self.imageLabel.setMinimumHeight(self.cur_img.shape[0])
+        self.imageLabel.setMinimumWidth(self.cur_img.shape[1])
         
+        # render template
+        self.x0 = x0
+        self.y0 = y0
+        self.h = self.h*2
+        self.w = self.w*2
+        self.renderTemplate()
+
     @pyqtSlot()
     def meanShiftTracking(self):
         self.statusBar().showMessage('Status: Tracking (Mean Shift)')
