@@ -19,7 +19,7 @@ class tracker:
     def __init__(self, file_path):
         """create new instance of template tracker class"""
         self.cap = cv.VideoCapture(file_path, cv.CAP_IMAGES) # make object of sequence
-        self.create_results_directory(self.tmp_path) # create directory for tracker results
+        #self.create_results_directory(self.tmp_path) # create directory for tracker results
 
     # utility methods
     def load_sequence(self, file_path):

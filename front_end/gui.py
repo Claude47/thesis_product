@@ -21,7 +21,8 @@ import cv2 as cv
 from front_end.imageview import imageView
 
 # Backend imports 
-from back_end.tracker_MS import tracker_MS # one of our API
+from back_end.trackerTM import trackerTM # template tracker 
+from back_end.trackerMS import trackerMS # mean shift tracker
 
 class GUI(QMainWindow):
     # instance variables for loading a sequence
@@ -85,13 +86,13 @@ class GUI(QMainWindow):
         simpleTemplateMatchingAction = QAction('Simple Template Matching', self)
         simpleTemplateMatchingAction.setShortcut('Ctrl+1')
         simpleTemplateMatchingAction.setStatusTip('Apply Simple Template Matching Algorithm')
-        simpleTemplateMatchingAction.triggered.connect(self.simpleTemplateMatching)
+        simpleTemplateMatchingAction.triggered.connect(self.simpleTemplateTracking)
 
         # Adaptive Template Matching
         adaptiveTemplateMatchingAction = QAction('Adaptive Template Matching', self)
         adaptiveTemplateMatchingAction.setShortcut('Ctrl+2')
         adaptiveTemplateMatchingAction.setStatusTip('Apply Adaptive Template Matching Algorithm')
-        adaptiveTemplateMatchingAction.triggered.connect(self.adaptiveTemplateMatching)
+        adaptiveTemplateMatchingAction.triggered.connect(self.adaptiveTemplateTracking)
 
         # Mean Shift
         meanShiftTrackingAction = QAction('Mean Shift Tracking', self)
@@ -198,7 +199,8 @@ class GUI(QMainWindow):
         
     def API(self):
         """initialised our API"""
-        self.MST = tracker_MS(self.seq_dir+"00000001.jpg") # initialise tracker_MS object
+        self.MST = trackerMS(self.seq_dir+"00000001.jpg") # initialise trackerMS object
+        self.TMT = trackerTM(self.seq_dir+"00000001.jpg") # initialise trackerTM object
                 
     # function for sequence Input and Output
     @pyqtSlot()
@@ -255,7 +257,6 @@ class GUI(QMainWindow):
         self.templateLabel.setMinimumHeight(self.h)
         self.templateLabel.setMinimumWidth(self.w)
         
-
     def updateImage(self):
         """updates the image being displayed in self.imageLabel"""
         self.loadImage() # load updated image
@@ -328,21 +329,50 @@ class GUI(QMainWindow):
     def algorithm_reset():
         """reset parameters after an algorithm has been run"""
         self.alg_running = False # set flag false again
-        
+        self.statusBar.setStatusTip("Status: Ready to Track")
 
-    def simpleTemplateMatching(self):
-        """call to external simpleTemplateMatching"""
-        self.statusBar().showMessage('Status: Tracking (Simple Template)')
-
-    def adaptiveTemplateMatching(self):
-        """call to external adaptiveTemplateMatching"""    
+    @pyqtSlot()
+    def simpleTemplateTracking(self):
+        """perform simple template matching"""
+        self.statusBar().showMessage('Status: Tracking (Simple Template)') 
+        self.TMT.setup(self.cur_img, self.imageLabel.currentQRect, "simple") # setup simple tracking
+        self.templateTrackingInit()
+    
+    @pyqtSlot()
+    def adaptiveTemplateTracking(self):
+        """perform adaptive template matching"""    
         self.statusBar().showMessage('Status: Tracking (Adaptive Template)')
+        self.TMT.setup(self.cur_img, self.imageLabel.currentQRect,"adaptive") # setup adaptive tracking
+        self.templateTrackingInit()
+
+    def templateTrackingInit(self):
+        """simple TMT initialisation"""
+        self.alg_running = True # tell system and Algorithm is running
+
+        self.TM_timer = QTimer() # timer for frame rate
+        self.TM_timer.timeout.connect(self.templateTrackingLoop) # connect timeouts to fetching next image
+        self.TM_timer.start(int(self.mst_delay * 1000)) # set timer countdown rate        
+        self.y0 = self.imageLabel.currentQRect[0]
+        self.x0 = self.imageLabel.currentQRect[1]
+        self.h = self.imageLabel.currentQRect[2]
+        self.w = self.imageLabel.currentQRect[3]
+        self.nextImage() # load frame 1
+
+    def templateTrackingLoop(self):
+        """TMT Loop"""
+        if(self.cur_index<self.seq_length-1):
+            coords = self.TMT.track(self.cur_img) # track    
+            print("coords: ", coords)
+            self.y0 = coords[0]
+            self.x0 = coords[1]
+            self.nextImage() # load image    
+        else:
+            self.TMT_timer.stop() # terminate algorithm
+            self.algorithm_reset() # cleanup and reset
 
     @pyqtSlot()
     def meanShiftTracking(self):
         self.statusBar().showMessage('Status: Tracking (Mean Shift)')
-
-
         self.meanShiftTrackingInit()
         self.MST_timer = QTimer() # timer for frame rate
         self.MST_timer.timeout.connect(self.meanShiftTrackingLoop) # connect timeouts to fetching next image
@@ -350,7 +380,6 @@ class GUI(QMainWindow):
 
     def meanShiftTrackingInit(self):
         """initialise meanShiftTracking"""
-        self.cur_index = 0 # start at beginning of sequence
         self.alg_running = True # tell system and Algorithm is running
         self.MST.setup(self.cur_img, self.imageLabel.currentQRect) # setup mean shift tracker with coords
         self.y0 = self.imageLabel.currentQRect[0]
@@ -362,7 +391,7 @@ class GUI(QMainWindow):
     def meanShiftTrackingLoop(self):
         """implement loop"""   
         if(self.cur_index<self.seq_length-1):
-            coords = self.MST.track2(self.cur_img) # track    
+            coords = self.MST.track(self.cur_img) # track    
             print("coords: ", coords)
             self.y0 = coords[0]
             self.x0 = coords[1]

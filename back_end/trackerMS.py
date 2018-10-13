@@ -6,17 +6,17 @@
 """
 
 # Imports
-import cv2 as cv
 import numpy as np
 from back_end.tracker import tracker 
 
-class tracker_MS(tracker): # inherits from tracker
+class trackerMS(tracker): # inherits from tracker
     # Instance Variables
     eps = 4 # step tolerance value
+    m = 8 # number of bins
 
     def __init__(self, file_path):
         super().__init__(file_path)  # call to super tracker constructor
-    
+
     # inherited methods
     def load_sequence(self, file_path):
         return super().load_sequence(file_path)
@@ -32,6 +32,15 @@ class tracker_MS(tracker): # inherits from tracker
 
     def image_write(self, image, seq_name="seq"):
         return super().image_write(image, seq_name="seq")
+
+    # setters
+    def set_eps(eps):
+        """set the step size"""
+        self.eps = eps
+
+    def set_m(m):
+        """set the bin size"""
+        self.m = m
 
     # methods:
     def bhatt_coeff(self, q, p):
@@ -85,13 +94,13 @@ class tracker_MS(tracker): # inherits from tracker
         elliptical_mask = self.elliptical_mask(height, width)
            
         # step2: fetch pixel values
-        hist = np.zeros(shape=(256//m, 256//m)) # 2d-histogram to hold values 
+        hist = np.zeros(shape=(256//self.m, 256//self.m)) # 2d-histogram to hold values 
         kernel = self.epanechnikov_kernel(template) # kernel and normalisation constant, C
         for y in range(0,height):
             for x in range(0,width): 
                 if(elliptical_mask[y,x]==True): # only deal with points in the mask
                     u, v = template[y,x,0],template[y,x,1] # get the R and G components
-                    index_r, index_g = u//m, v//m # used to index 2d-histogram
+                    index_r, index_g = u//self.m, v//self.m # used to index 2d-histogram
                     hist[index_r,index_g] = hist[index_r,index_g] + kernel[y,x] # add point to histogram with weight
         
         # normalize histogram
@@ -112,7 +121,7 @@ class tracker_MS(tracker): # inherits from tracker
             for x in range(0,width): 
                 if(elliptical_mask[y,x]==True):  
                     u, v = template[y,x,0], template[y,x,1] # get colour index ,u with which we can index the histograms
-                    index_r, index_g = u//m, v//m # used to index 2d-histogram
+                    index_r, index_g = u//self.m, v//self.m # used to index 2d-histogram
                     if(p[index_r,index_g]!=0):
                         weights[y,x] = np.sqrt(q[index_r,index_g]/p[index_r,index_g]) # compute weights based on equation
         return weights 
@@ -137,10 +146,10 @@ class tracker_MS(tracker): # inherits from tracker
     def mean_shift_loop(self, frame, q, y0, x0, h, w):
         """perform mean shift to get new location"""
         t1 = frame[y0:y0+h, x0:x0+w] # candidate template
-        p0 = self.histogram(t1, m=8) # candidate histogram
+        p0 = self.histogram(t1) # candidate histogram
 
         for i in range(0,10): # mean shift loop 20 iterations
-            weights = self.pixel_weights(t1, q, p0, m=8) # calculate weights
+            weights = self.pixel_weights(t1, q, p0) # calculate weights
             vy, vx = self.mean_shift(t1, weights) # calculate mean shift vector
             y1, x1 = int(y0+vy), int(x0+vx) # y1
 
@@ -150,7 +159,7 @@ class tracker_MS(tracker): # inherits from tracker
 
             else: # step not small enough use battacharyya coefficient to refine step
                 tc = frame[y1:y1+h, x1:x1+w] # get ROI at x1
-                p1 = self.histogram(tc, m=8) # compute p(x1)
+                p1 = self.histogram(tc) # compute p(x1)
                 batt0 = self.bhatt_coeff(q, p0) # similarity measure between q(x0) and p(x0) 
                 batt1 = self.bhatt_coeff(q, p1) # similiarty measure betweem q(x0) and p(x1)
 
@@ -159,8 +168,8 @@ class tracker_MS(tracker): # inherits from tracker
                     vy, vx = vy//2, vx//2 # halve the step size
                     y1, x1 = int(y0+vy), int(x0+vx) # get new smaller distance 
                     tc = frame[y1:y1+h,x1:x1+w]
-                    p1 = self.histogram(tc, m=8)
-                    batt1 = self.bhatt_coeff(q,p1)
+                    p1 = self.histogram(tc)
+                    batt1 = self.bhatt_coeff(q, p1)
                     if(np.abs(vy)<=1 and np.abs(vx)<=1): # avoid infinite loop
                         break
                 return y1, x1
@@ -175,14 +184,13 @@ class tracker_MS(tracker): # inherits from tracker
         t0 = frame0[self.y0:self.y0+self.h, self.x0:self.x0+self.w] # isolate target template
         self.q = self.histogram(t0) # compute target histogram, q from t1
  
-    def track(self):
+    def track2(self):
         """mean shift algorithm applied to the video or image sequence"""
         # frame 1: 
         ret,frame0 = self.cap.read() # get first frame
         y0, x0, h, w = self.select_roi(frame0) # user select target template
         t0 = frame0[y0:y0+h, x0:x0+w] # isolate target template
         q = self.histogram(t0) # compute target histogram, q from t1
-
         while(1): # main loop
             ret,frame1 = self.cap.read() # get next frame n+1
             if(frame1 is None): # safety check
@@ -200,7 +208,7 @@ class tracker_MS(tracker): # inherits from tracker
             cv.imshow('mean_shift', frame1)
             cv.waitKey(0)
 
-    def track2(self, frame): # gets frame from front end
+    def track(self, frame): # gets frame from front end
         """track for gui"""
         if(frame is not None): # safety check 
             y0, x0 = self.mean_shift_loop(frame, self.q, self.y0, self.x0, self.h, self.w) 
@@ -211,4 +219,4 @@ class tracker_MS(tracker): # inherits from tracker
             return -1, -1
 
 if __name__=='__main__':
-    track2()
+    track()
