@@ -56,7 +56,7 @@ class GUI(QMainWindow):
         # Set window dimensions, title and icon
         self.setGeometry(50,50, 500, 500)
         self.setWindowTitle('Motion Tracking Application')
-        self.setWindowIcon(QIcon('pythonlogo.png'))
+        self.setWindowIcon(QIcon('resources/logo.png'))
                 
         # Initialise menu
         self.menu() 
@@ -74,43 +74,59 @@ class GUI(QMainWindow):
         """Menu Bar, Task Bar and Status Bar intitialisation"""     
         # ICONS
         fileIcon = QApplication.style().standardIcon(QStyle.SP_DirIcon)
-        exitIcon = QApplication.style().standardIcon(QStyle.SP_TitleBarCloseButton)
+        saveIcon = QApplication.style().standardIcon(QStyle.SP_DriveFDIcon)
+        exitIcon = QIcon('resources/exit-2.png')
+        detectIcon = QIcon('resources/radar.png')
+        trackIcon = QIcon('resources/target.png')
+        settingsIcon = QIcon('resources/settings-1.png')
 
         # ACTIONS        
         # 1. fileMenu Actions
         ## fileSelectAction: lets user select a file from a directory 
-        fileSelectAction = QAction(fileIcon, 'File', self) # Exit Action Object
+        fileSelectAction = QAction(fileIcon, 'Select Sequence', self) # Exit Action Object
         fileSelectAction.setShortcut('Ctrl+O') # bind shortcut "Ctrl+Q" to Exit Button
-        fileSelectAction.setStatusTip('Open File') # status bar exit message
+        fileSelectAction.setStatusTip('Open Sequence') # status bar exit message
         fileSelectAction.triggered.connect(self.openSequence) # connect QtGui quit() method 
         
         ## exitAction: exits the application
+        sequenceSaveAction = QAction(saveIcon, 'Save Sequence', self) # Exit Action Object
+        sequenceSaveAction.setShortcut('Ctrl+S') # bind shortcut "Ctrl+Q" to Exit Button
+        sequenceSaveAction.setStatusTip('Save next tracker run') # status bar exit message
+        sequenceSaveAction.triggered.connect(self.saveSequence) # connect QtGui quit() method  
+
+        settingsAction = QAction(settingsIcon, 'Algorithm Parameters', self) # Exit Action Object
+        settingsAction.setShortcut('Ctrl+P') # bind shortcut "Ctrl+Q" to Exit Button
+        settingsAction.setStatusTip('Select Algorithm Parameters') # status bar exit message
+        settingsAction.triggered.connect(self.algorithmSettings) # connect QtGui quit() method  
+
+
+        ## exitAction: exits the application
         exitAction = QAction(exitIcon, 'Exit', self) # Exit Action Object
         exitAction.setShortcut('Ctrl+Q') # bind shortcut "Ctrl+Q" to Exit Button
-        exitAction.setStatusTip('Exit application') # status bar exit message
+        exitAction.setStatusTip('Exit Application') # status bar exit message
         exitAction.triggered.connect(self.close) # connect QtGui quit() method 
         
         # 2. trackerMenu Actions 
         # Simple Template Matching
-        simpleTemplateMatchingAction = QAction('Simple Template Tracker', self)
+        simpleTemplateMatchingAction = QAction(trackIcon, 'Simple Template Tracker', self)
         simpleTemplateMatchingAction.setShortcut('Ctrl+2')
         simpleTemplateMatchingAction.setStatusTip('Apply Simple Template Matching Algorithm')
         simpleTemplateMatchingAction.triggered.connect(self.simpleTemplateTracking)
 
         # Adaptive Template Matching
-        adaptiveTemplateMatchingAction = QAction('Adaptive Template Tracker', self)
+        adaptiveTemplateMatchingAction = QAction(trackIcon, 'Adaptive Template Tracker', self)
         adaptiveTemplateMatchingAction.setShortcut('Ctrl+3')
         adaptiveTemplateMatchingAction.setStatusTip('Apply Adaptive Template Matching Algorithm')
         adaptiveTemplateMatchingAction.triggered.connect(self.adaptiveTemplateTracking)
 
         # Mean Shift
-        meanShiftTrackingAction = QAction('Mean Shift Tracker', self)
+        meanShiftTrackingAction = QAction(trackIcon, 'Mean Shift Tracker', self)
         meanShiftTrackingAction.setShortcut('Ctrl+4')
         meanShiftTrackingAction.setStatusTip('Apply Mean Shift Tracking Algorithm')
         meanShiftTrackingAction.triggered.connect(self.meanShiftTracking)
 
         # Cooccurence Histogram
-        detectionAction = QAction('Cooccurence Histogram Detection', self)
+        detectionAction = QAction(detectIcon, 'Cooccurence Histogram Detection', self)
         detectionAction.setShortcut('Ctrl+1')
         detectionAction.setStatusTip('Apply Cooccurrence histogram Detection')
         detectionAction.triggered.connect(self.CHDetection)
@@ -119,8 +135,10 @@ class GUI(QMainWindow):
         menuBar = self.menuBar() 
 
         ## 1. fileMenu - drop down buttons
-        fileMenu = menuBar.addMenu(QIcon(),'&File') # Add File option to Menu Bar
+        fileMenu = menuBar.addMenu('&File') # Add File option to Menu Bar
         fileMenu.addAction(fileSelectAction) # Add fileSelectAction to fileMenu 
+        fileMenu.addAction(sequenceSaveAction) # Add sequenceSaveAction to fileMenu
+        fileMenu.addAction(settingsAction) # Add settingsAction to fileMenu
         fileMenu.addAction(exitAction) # Add exitAction to fileMenu
         
          ## 2. detectorMenu - select algorithms
@@ -141,7 +159,10 @@ class GUI(QMainWindow):
         toolBar = self.addToolBar('Exit') # Add Exit icon to Tool Bar  
         
         toolBar.addAction(fileSelectAction) # Add File Select Object to Tool Bar
-        toolBar.addAction(exitAction) # Add Exit Action Object to Tool Bar
+        toolBar.addAction(sequenceSaveAction) # Add Seqeuence Save Object to Tool Bar
+        toolBar.addAction(settingsAction) # settings
+        toolBar.addAction(exitAction) # exit
+
 
     def layout(self):
         """Builds the application area where backend images displayed"""
@@ -232,7 +253,7 @@ class GUI(QMainWindow):
         """function to point to a folder with a desired sequence"""
         self.seq_dir = QFileDialog.getExistingDirectory(self,'Open File') # store path to sequence
         self.readSequence(self.seq_dir) # read in file names in sequence into self.paths
-        
+  
     def readSequence(self, seq_dir):
         """read in sequence"""
         for path in sorted(os.listdir(seq_dir)):
@@ -244,7 +265,16 @@ class GUI(QMainWindow):
         self.cur_index = 0 # reset image index
         self.cur_path = self.seq_paths[self.cur_index] # set cur image to first image in self.seq_paths
         self.loadImage() # load in first image
-     
+  
+    @pyqtSlot()
+    def saveSequence(self):
+        """function to select dir for next algorithm run to be saved to"""
+        
+
+    @pyqtSlot()
+    def algorithmSettings(self):
+        """set the algortihms with buttons"""
+
     @pyqtSlot()
     def loadImage(self):
         """function to display using filepath"""
