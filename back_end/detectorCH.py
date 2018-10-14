@@ -16,6 +16,7 @@ class detectorCH(tracker):
     nd = 12 # distances for CCH
     nc = 8 # colour quantization levels
     alpha = 0.7 # threshold
+    q = None
 
     def __init__(self, file_path):
         super().__init__(file_path)  # call to super tracker constructor

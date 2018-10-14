@@ -46,8 +46,8 @@ class GUI(QMainWindow):
     # writing 
     write_path = "" # path to directory to write to 
 
-    # signals
-    release = pyqtSignal() # check release of imageView
+    # boolean Flags
+    CH_model_exists = False
 
     def __init__(self, parent=None):
         """super constructor + app constructor"""
@@ -72,16 +72,20 @@ class GUI(QMainWindow):
              
     def menu(self):               
         """Menu Bar, Task Bar and Status Bar intitialisation"""     
+        # ICONS
+        fileIcon = QApplication.style().standardIcon(QStyle.SP_DirIcon)
+        exitIcon = QApplication.style().standardIcon(QStyle.SP_TitleBarCloseButton)
+
         # ACTIONS        
         # 1. fileMenu Actions
         ## fileSelectAction: lets user select a file from a directory 
-        fileSelectAction = QAction(QIcon('exit24.png'), 'File', self) # Exit Action Object
+        fileSelectAction = QAction(fileIcon, 'File', self) # Exit Action Object
         fileSelectAction.setShortcut('Ctrl+O') # bind shortcut "Ctrl+Q" to Exit Button
         fileSelectAction.setStatusTip('Open File') # status bar exit message
         fileSelectAction.triggered.connect(self.openSequence) # connect QtGui quit() method 
         
         ## exitAction: exits the application
-        exitAction = QAction(QIcon('exit24.png'), 'Exit', self) # Exit Action Object
+        exitAction = QAction(exitIcon, 'Exit', self) # Exit Action Object
         exitAction.setShortcut('Ctrl+Q') # bind shortcut "Ctrl+Q" to Exit Button
         exitAction.setStatusTip('Exit application') # status bar exit message
         exitAction.triggered.connect(self.close) # connect QtGui quit() method 
@@ -89,25 +93,25 @@ class GUI(QMainWindow):
         # 2. trackerMenu Actions 
         # Simple Template Matching
         simpleTemplateMatchingAction = QAction('Simple Template Tracker', self)
-        simpleTemplateMatchingAction.setShortcut('Ctrl+1')
+        simpleTemplateMatchingAction.setShortcut('Ctrl+2')
         simpleTemplateMatchingAction.setStatusTip('Apply Simple Template Matching Algorithm')
         simpleTemplateMatchingAction.triggered.connect(self.simpleTemplateTracking)
 
         # Adaptive Template Matching
         adaptiveTemplateMatchingAction = QAction('Adaptive Template Tracker', self)
-        adaptiveTemplateMatchingAction.setShortcut('Ctrl+2')
+        adaptiveTemplateMatchingAction.setShortcut('Ctrl+3')
         adaptiveTemplateMatchingAction.setStatusTip('Apply Adaptive Template Matching Algorithm')
         adaptiveTemplateMatchingAction.triggered.connect(self.adaptiveTemplateTracking)
 
         # Mean Shift
         meanShiftTrackingAction = QAction('Mean Shift Tracker', self)
-        meanShiftTrackingAction.setShortcut('Ctrl+3')
+        meanShiftTrackingAction.setShortcut('Ctrl+4')
         meanShiftTrackingAction.setStatusTip('Apply Mean Shift Tracking Algorithm')
         meanShiftTrackingAction.triggered.connect(self.meanShiftTracking)
 
         # Cooccurence Histogram
         detectionAction = QAction('Cooccurence Histogram Detection', self)
-        detectionAction.setShortcut('Ctrl+4')
+        detectionAction.setShortcut('Ctrl+1')
         detectionAction.setStatusTip('Apply Cooccurrence histogram Detection')
         detectionAction.triggered.connect(self.CHDetection)
 
@@ -115,7 +119,7 @@ class GUI(QMainWindow):
         menuBar = self.menuBar() 
 
         ## 1. fileMenu - drop down buttons
-        fileMenu = menuBar.addMenu('&File') # Add File option to Menu Bar
+        fileMenu = menuBar.addMenu(QIcon(),'&File') # Add File option to Menu Bar
         fileMenu.addAction(fileSelectAction) # Add fileSelectAction to fileMenu 
         fileMenu.addAction(exitAction) # Add exitAction to fileMenu
         
@@ -205,6 +209,7 @@ class GUI(QMainWindow):
         self.templateLabel.setMinimumHeight(250)
         self.templateLabel.setStyleSheet('* {background: black;}')
         self.templateLabel.setAlignment(Qt.AlignCenter)
+
         # add widgets to layout
         self.screenLayout.addWidget(self.imageLabel)
         self.rightLayout.addWidget(self.templateLabel)
@@ -345,30 +350,42 @@ class GUI(QMainWindow):
         painter.drawRect(self.x0, self.y0, self.w, self.h)
 
     # BACKEND functions 
-    def algorithm_reset():
+    def algorithm_reset(self):
         """reset parameters after an algorithm has been run"""
         self.alg_running = False # set flag false again
-        self.statusBar.setStatusTip("Status: Ready to Track")
+        self.statusBar().setStatusTip("Status: Ready to Track")
+        self.imageLabel.triggered.disconnect() # disconnect slot
+        self.CH_model_exists = False # say no model
 
     @pyqtSlot()
     def simpleTemplateTracking(self):
         """perform simple template matching"""
         self.statusBar().showMessage('Status: Tracking (Simple Template)') 
-
+        self.imageLabel.triggered.connect(self.simpleInit)
+        QMessageBox.about(self, "Simple Template Tracker", "Select Object to Track") 
+            
+    
+    def simpleInit(self):
+        """simple specific init"""
         self.TMT.setup(self.cur_img, self.imageLabel.currentQRect, "simple") # setup simple tracking
         self.templateTrackingInit()
-    
+
     @pyqtSlot()
     def adaptiveTemplateTracking(self):
         """perform adaptive template matching"""    
         self.statusBar().showMessage('Status: Tracking (Adaptive Template)')
+        QMessageBox.about(self, "Adaptive Template Tracker", "Select Object to Track") 
+            
+        self.imageLabel.triggered.connect(self.adaptiveInit) 
+
+    def adaptiveInit(self):
+        """adaptive specific init"""
         self.TMT.setup(self.cur_img, self.imageLabel.currentQRect,"adaptive") # setup adaptive tracking
-        self.templateTrackingInit()
+        self.templateTrackingInit() # call tracking
 
     def templateTrackingInit(self):
         """simple TMT initialisation"""
         self.alg_running = True # tell system and Algorithm is running
-
         self.TM_timer = QTimer() # timer for frame rate
         self.TM_timer.timeout.connect(self.templateTrackingLoop) # connect timeouts to fetching next image
         self.TM_timer.start(int(self.mst_delay * 1000)) # set timer countdown rate        
@@ -387,18 +404,22 @@ class GUI(QMainWindow):
             self.x0 = coords[1]
             self.nextImage() # load image    
         else:
-            self.TMT_timer.stop() # terminate algorithm
+            self.TM_timer.stop() # terminate algorithm
             self.algorithm_reset() # cleanup and reset
     
     @pyqtSlot()
     def CHDetection(self):
         self.statusBar().showMessage('Status: Detecting (Co-occurrence Histogram)')
-        self.CHDInit()
-    
+        if(self.CH_model_exists==False):
+            self.CH_model_exists==True
+            QMessageBox.about(self, "Co-occurrence Histogram Detector", "Select Object to Detect") 
+            self.imageLabel.triggered.connect(self.CHDInit) # select model
+        else:
+            self.CHDdetect() # detect to use old model
+
     def CHDInit(self):
         """initialise CH Histogram"""
         self.alg_running = True # tell system and Algorithm is running
-        print(self.imageLabel.currentQRect)
         self.CHD.setup(self.cur_img, self.imageLabel.currentQRect) # setup mean shift tracker with coords
         self.y0 = self.imageLabel.currentQRect[0]
         self.x0 = self.imageLabel.currentQRect[1]
@@ -428,6 +449,7 @@ class GUI(QMainWindow):
         self.h = self.h*2
         self.w = self.w*2
         self.renderTemplate()
+        self.algorithm_reset()
 
     @pyqtSlot()
     def meanShiftTracking(self):
