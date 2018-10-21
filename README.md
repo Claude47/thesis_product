@@ -42,9 +42,33 @@ regions of objects to track. The MT System allows for the setting of different a
 provides visual feeback to a particular user
 
 ## Installation
+The project requires Python version 3.6, and pip3 python package manager.
 It is recommended that a user have virtualenv or virtualenv wrapper installed on
-their machine so that there are no dependency clashes in installing the
-requisite dependencies.
+their machine so that there are no clashes with the global python environment when installing the requisite dependencies for the MT System.
+virtualenv installation instructions can be found at the following url: 
+https://python-docs.readthedocs.io/en/latest/dev/virtualenvs.html
+
+virtualenvwrapper installation instructions can be found by following this url:
+https://virtualenvwrapper.readthedocs.io/en/latest/install.html
+
+Once either virtualenv or virtualenvwrapper are installed, navigate to a
+directory of your choice and clone the repository via the following command.
+
+```bash
+git clone git@github.com:Claude47/thesis_product.git
+```
+
+Create a new virtual environment within which the dependices for the MT System
+can be installed in isolation. The instructions for doing this should be on the
+previously mentioned installation pages.
+
+Once the relevant virtualenv or virtualenvwrapper is activated, the following
+command will download all the relevant dependencies necessary to run the MT
+System or to use the back end tracker APIs
+
+```bash
+pip3 install -r requirements.txt
+```
 
 ## API Reference
 In the case that the back-end tracker algorithms are to be integrated into a
@@ -54,6 +78,7 @@ The detector or tracker object exposes two APIs to a user. The first method is
 ```python
     setup(frame0, ROI)
 ```
+
 This method initialises the tracker with the target model. It takes two parameters for this, the initial frame of interest and a user selected region of
 interest (ROI) containing the object to be tracked. 
 
@@ -67,6 +92,12 @@ called for each subsequent frame in a particular sequence.
 The APIs is standardised across all the implemented detector and tracker
 classes. 
 
+In addition these two APIs. There are various setters for the different algorithm parameters of the various implementatons that are
+defined at the top of the class definitions of the various trackers.
+
+
+
+
 ## How to use API
 Import the detector or tracker via a simple import from their respective
 modules, this is shown below
@@ -79,9 +110,6 @@ An example of this is shown below.
 ```python
 MST = trackerMS() # create tracker object
 ```
-
-There are various setters for the different algorithm parameters listed and
-defined at the top of the class definitions of the various trackers.
 
 Two usage patterns of the API are outlined below
 Assuming a user, wants to handle their own I/O as is the case with the
