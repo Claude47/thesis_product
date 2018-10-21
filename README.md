@@ -76,14 +76,14 @@ seperate application or program. The relevant APIs are easy to use.
 
 The detector or tracker object exposes two APIs to a user. The first method is 
 ```python
-    setup(frame0, ROI)
+    tracker.setup(frame0, ROI)
 ```
 
 This method initialises the tracker with the target model. It takes two parameters for this, the initial frame of interest and a user selected region of
 interest (ROI) containing the object to be tracked. 
 
 ```python
-    track(frame)
+    tracker.track(frame)
 ```
 This method takes as an argument the frame of interest in particular image
 sequence for in which the target model should be tracked. This function is
