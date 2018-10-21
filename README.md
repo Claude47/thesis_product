@@ -96,8 +96,6 @@ In addition these two APIs. There are various setters for the different algorith
 defined at the top of the class definitions of the various trackers.
 
 
-
-
 ## How to use API
 Import the detector or tracker via a simple import from their respective
 modules, this is shown below
@@ -112,7 +110,7 @@ MST = trackerMS() # create tracker object
 ```
 
 Two usage patterns of the API are outlined below
-Assuming a user, wants to handle their own I/O as is the case with the
+1. Assuming a user, wants to handle their own I/O as is the case with the
 integrated MS System which has the PyQt5 GUI handle IO the following code sample is relevant.
 The sample assumes that:
     next_frame() - avails the next frame in a sequence starting from frame 0 
@@ -139,7 +137,7 @@ def main():
         frame = next_frame() # get next frame in sequence 
 ```
 
-Alternatively using the OpenCV library for I/O, The MST tracker has can be used
+2. Alternatively using the OpenCV library for I/O, The MST tracker has can be used
 in an entriely self contained manner. A sample usage is displayed below, in this
 scenario, the MST handles IO internally only outputting processed frames with
 bounding boxes around the selected target.
