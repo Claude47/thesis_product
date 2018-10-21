@@ -36,6 +36,11 @@ and virtualenvwrapper packages
 
 The Installation section goes over a simple means to setup these dependencies
 
+## Features 
+In addition to facilitating user selection of image sequences, and selection of
+regions of objects to track. The MT System allows for the setting of different algorithm parameters and
+provides visual feeback to a particular user
+
 ## Installation
 It is recommended that a user have virtualenv or virtualenv wrapper installed on
 their machine so that there are no dependency clashes in installing the
@@ -44,13 +49,6 @@ requisite dependencies.
 ## API Reference
 In the case that the back-end tracker algorithms are to be integrated into a
 seperate application or program. The relevant APIs are easy to use.
-
-Import the detector or tracker via a simple import from their respective
-modules.
-An example is shown below.
-```python
-    from trackerMS import trackerMS 
-```
 
 The detector or tracker object exposes two APIs to a user. The first method is 
 ```python
@@ -69,12 +67,71 @@ called for each subsequent frame in a particular sequence.
 The APIs is standardised across all the implemented detector and tracker
 classes. 
 
-## How to use GUI
+## How to use API
+Import the detector or tracker via a simple import from their respective
+modules, this is shown below
+```python
+from trackerMS import trackerMS # import tracker from it's module
+```
+
+A user is then free to create multiple detector or tracker instances
+An example of this is shown below.
+```python
+MST = trackerMS() # create tracker object
+```
+
+There are various setters for the different algorithm parameters listed and
+defined at the top of the class definitions of the various trackers.
+
+Two usage patterns of the API are outlined below
+Assuming a user, wants to handle their own I/O as is the case with the
+integrated MS System which has the PyQt5 GUI handle IO the following code sample is relevant.
+The sample assumes that:
+    next_frame() - avails the next frame in a sequence starting from frame 0 
+    select_roi() - allows user selection of a ROI in said
+that initial frame. 
+
+```python
+from trackerMS import trackerMS
+
+def main():
+    """track sequence"""
+    MST = trackerMS() # create tracker object
+    frame0 = next_frame() # get initial frame
+    template = select_roi() # select region of interest
+
+    MST.setup(frame0,template) # initialise tracker
+    
+    # loop through sequence
+    track = [] # array to hold MST results
+    frame = next_frame()
+    while(frame is not None):
+        coords = MST.track(frame) # track for frame
+        track.append(coords) # add coordinates to track
+        frame = next_frame() # get next frame in sequence 
+```
+
+Alternatively using the OpenCV library for I/O, The MST tracker has can be used
+in an entriely self contained manner. A sample usage is displayed below, in this
+scenario, the MST handles IO internally only outputting processed frames with
+bounding boxes around the selected target.
+
+```python
+from trackerMS import trackerMS
+
+seq_path = "bird/00001.jpg" # path to first image in sequence
+
+def main():
+    """track sequence"""
+    MST = trackerMS(seq_path) # create tracker object
+    MST.track2() # alternate track function reliant of OpenCV.
+```
+
+# Using the Graphical Tool
 Provided the required dependencies are met, the GUI can be launched using the
 the following command within the project root directory.
 
 ```bash
 python MTS.py
 ```
-
 
