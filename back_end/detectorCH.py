@@ -222,8 +222,6 @@ class detectorCH(tracker):
 
     def detect(self, frame, sf=2):
         # obtain dimensions of frame, model and search window
-
-        print(self.kmeans)
         print("coarse")
         # step1: Coarse Search
         sw_height, sw_width = sf*self.hm, sf*self.wm # get search window dimensions 
