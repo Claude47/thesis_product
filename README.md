@@ -145,7 +145,7 @@ bounding boxes around the selected target.
 ```python
 from trackerMS import trackerMS
 
-seq_path = "bird/00001.jpg" # path to first image in sequence
+seq_path = "data/girl/00000001.jpg" # path to first image in sequence
 
 def main():
     """track sequence"""
@@ -160,4 +160,11 @@ the following command within the project root directory.
 ```bash
 python MTS.py
 ```
+
+The MT System application comes with some sample sequences taken from the Visual
+Motion Tracking Challenge 2017 (VOT2017) dataset. These can be found in the \data
+directory.
+
+
+
 
